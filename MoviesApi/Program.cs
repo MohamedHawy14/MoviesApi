@@ -1,6 +1,7 @@
 
 using Microsoft.OpenApi.Models;
 using MoviesApi.Data;
+using MoviesApi.Services;
 
 namespace MoviesApi
 {
@@ -14,6 +15,9 @@ namespace MoviesApi
             builder.Services.AddDbContext<ApplicationDbContext>(
                 options => { options.UseSqlServer(builder.Configuration.GetConnectionString("Cs")); }
                 );
+            builder.Services.AddTransient<IGenreServices, GenreServices>();
+            builder.Services.AddTransient<IMovieServices, MovieServices>();
+            builder.Services.AddAutoMapper(typeof(Program));
             builder.Services.AddControllers();
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();

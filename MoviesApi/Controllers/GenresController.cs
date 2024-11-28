@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using MoviesApi.Data;
 using MoviesApi.Data.Models;
 using MoviesApi.DTO;
+using MoviesApi.Services;
 
 namespace MoviesApi.Controllers
 {
@@ -10,45 +11,43 @@ namespace MoviesApi.Controllers
     [ApiController]
     public class GenresController : ControllerBase
     {
-        private readonly ApplicationDbContext context;
+        private readonly IGenreServices _services;
 
-        public GenresController(ApplicationDbContext _context)
+        public GenresController(IGenreServices services)
         {
-            context = _context;
+            _services = services;
         }
+
         [HttpGet]
         public async Task<ActionResult> GetAllGenreAsync()
         {
-            var Genres = await context.Genres.OrderBy(e=>e.Name).ToListAsync();
+            var Genres = await _services.GetAll();
             return Ok(Genres);
         }
         [HttpPost]
         public async Task<ActionResult> CreateGenreAsync(GenreDTO dTO)
         {
             var Genre = new Genre { Name = dTO.Name };
-            await context.Genres.AddAsync(Genre);
-            context.SaveChanges();
+            await _services.Add(Genre);
             return Ok(Genre);
         }
         [HttpPut("{id:int}")]
-        public async Task<ActionResult> EditGenreAsync(int id, GenreDTO dTO)
+        public async Task<ActionResult> EditGenreAsync(byte id, GenreDTO dTO)
         {
-            var Genre = await context.Genres.SingleOrDefaultAsync(e => e.Id == id);
+            var Genre = await _services.GetById(id);
             if (Genre is null)
                 return NotFound($"Genre With Id : {id} Not Found");
             Genre.Name = dTO.Name;
-            context.Update(Genre);
-            context.SaveChanges();
+           _services.Update(Genre);
             return Ok(Genre);
         }
         [HttpDelete("{id:int}")]
-        public async Task<ActionResult> DeleteGenreAsync(int id)
+        public async Task<ActionResult> DeleteGenreAsync(byte id)
         {
-            var Genre = await context.Genres.SingleOrDefaultAsync(e => e.Id == id);
+            var Genre = await _services.GetById(id);
             if (Genre is null)
                 return NotFound($"Genre With Id : {id} Not Found");
-            context.Remove(Genre);
-            context.SaveChanges();
+            _services.Delete(Genre);
             return Ok(Genre);
 
         }
