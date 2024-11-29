@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MoviesApi.Data;
@@ -27,6 +28,7 @@ namespace MoviesApi.Controllers
             this._mapper = mapper;
         }
         [HttpGet]
+        [Authorize(Roles = "User")]
         public async Task<IActionResult> GetAllMoviesAsync()
         {
             var movies = await _movieServices.GetAll();
@@ -34,6 +36,7 @@ namespace MoviesApi.Controllers
             return Ok(data);
         }
         [HttpGet("{id:int}")]
+        [Authorize(Roles = "User")]
         public async Task<IActionResult> GetMovieByIdAsync(int id)
         {
             var Movie = await _movieServices.GetById(id);
@@ -43,6 +46,7 @@ namespace MoviesApi.Controllers
             return Ok(Data);
         }
         [HttpGet("GetMoviesByGenreId")]
+        [Authorize(Roles = "User")]
         public async Task<IActionResult> GetMoviesByGenreIdAsync(byte GenreId)
         {
             var movies = await _movieServices.GetAll(GenreId);
@@ -51,6 +55,7 @@ namespace MoviesApi.Controllers
             return Ok(Data);
         }
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult> CreateMovieAsync([FromForm]MovieCreateDTO dTO)
         {
             if (!_allowedextention.Contains(Path.GetExtension(dTO.Poster.FileName).ToLower()))
@@ -71,6 +76,7 @@ namespace MoviesApi.Controllers
             return Ok(movie);
         }
         [HttpPut("{id:int}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> EditMovie(int id,[FromForm]MovieEditDTO dTO)
         {
             var movie = await _movieServices.GetById(id);
@@ -100,6 +106,7 @@ namespace MoviesApi.Controllers
 
         }
         [HttpDelete("{id:int}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteMovieAsync(int id)
         {
             var movie = await _movieServices.GetById(id);

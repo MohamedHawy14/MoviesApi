@@ -1,7 +1,13 @@
 
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using MoviesApi.Data;
+using MoviesApi.Data.Models;
+using MoviesApi.Helpers;
 using MoviesApi.Services;
+using System.Text;
 
 namespace MoviesApi
 {
@@ -17,6 +23,31 @@ namespace MoviesApi
                 );
             builder.Services.AddTransient<IGenreServices, GenreServices>();
             builder.Services.AddTransient<IMovieServices, MovieServices>();
+            builder.Services.AddScoped<IAuthServices, AuthServices>();
+            builder.Services.AddIdentity<ApplicationUser, IdentityRole>().AddEntityFrameworkStores<ApplicationDbContext>().AddDefaultTokenProviders();
+            builder.Services.Configure<JWT>(builder.Configuration.GetSection("JWT"));
+            builder.Services.AddAuthentication(options => {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+            }).AddJwtBearer(
+               options =>
+               {
+                   options.SaveToken = false;
+                   options.RequireHttpsMetadata = false;
+                   options.TokenValidationParameters = new TokenValidationParameters()
+                   {
+                       ValidateIssuerSigningKey = true,
+                       ValidateLifetime = true,
+                       ValidateIssuer = true,
+                       ValidIssuer = builder.Configuration["JWT:issuerIP"],
+                       ValidateAudience = true,
+                       ValidAudience = builder.Configuration["JWT:audienceIP"],
+                       IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JWT:SecurityKey"]))
+                   };
+
+               }
+               );
             builder.Services.AddAutoMapper(typeof(Program));
             builder.Services.AddControllers();
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
