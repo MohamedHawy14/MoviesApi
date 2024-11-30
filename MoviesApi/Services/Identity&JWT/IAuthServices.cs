@@ -9,5 +9,9 @@ namespace MoviesApi.Services
 
         Task<string> AddRoleAsync(AssignRoleModel model);
         Task<string> CreateRoleAsync(AddRoleModel model);
+
+        Task<AuthModel> RefreshTokenAsync(string token);
+
+        Task<bool> RevokeTokenAsync(string token);
     }
 }

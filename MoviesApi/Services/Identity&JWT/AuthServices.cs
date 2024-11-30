@@ -6,6 +6,7 @@ using MoviesApi.Data.Models;
 using MoviesApi.Helpers;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace MoviesApi.Services
@@ -91,6 +92,21 @@ namespace MoviesApi.Services
             authModel.Roles = rolesList.ToList();
             authModel.Message = "Created Successfully";
 
+            if (user.refershTokens.Any(t => t.IsActive))
+            {
+                var activeRefreshToken = user.refershTokens.FirstOrDefault(t => t.IsActive);
+                authModel.RefreshToken = activeRefreshToken.Token;
+                authModel.RefreshTokenExpiration = activeRefreshToken.ExpiresOn;
+            }
+            else
+            {
+                var refreshToken = GenerateRefreshToken();
+                authModel.RefreshToken = refreshToken.Token;
+                authModel.RefreshTokenExpiration = refreshToken.ExpiresOn;
+                user.refershTokens.Add(refreshToken);
+                await _userManager.UpdateAsync(user);
+            }
+
             return authModel;
         }
         public async Task<string> CreateRoleAsync(AddRoleModel model)
@@ -150,10 +166,84 @@ namespace MoviesApi.Services
                 issuer: _jwt.issuerIP,
                 audience: _jwt.audienceIP,
                 claims: claims,
-                expires: DateTime.Now.AddDays(_jwt.DuarationInDays),
+                expires: DateTime.Now.AddMinutes(_jwt.DuarationInMintues),
                 signingCredentials: signingCredentials);
 
             return jwtSecurityToken;
+        }
+        public async Task<AuthModel> RefreshTokenAsync(string token)
+        {
+            var authModel = new AuthModel();
+
+            var user = await _userManager.Users.SingleOrDefaultAsync(u => u.refershTokens.Any(t => t.Token == token));
+
+            if (user == null)
+            {
+                authModel.Message = "Invalid token";
+                return authModel;
+            }
+
+            var refreshToken = user.refershTokens.Single(t => t.Token == token);
+
+            if (!refreshToken.IsActive)
+            {
+                authModel.Message = "Inactive token";
+                return authModel;
+            }
+
+            refreshToken.RevokedOn = DateTime.UtcNow;
+
+            var newRefreshToken = GenerateRefreshToken();
+            user.refershTokens.Add(newRefreshToken);
+            await _userManager.UpdateAsync(user);
+
+            var jwtToken = await CreateJwtToken(user);
+            authModel.IsAuthenticated = true;
+            authModel.Token = new JwtSecurityTokenHandler().WriteToken(jwtToken);
+            authModel.Email = user.Email;
+            authModel.Username = user.UserName;
+            var roles = await _userManager.GetRolesAsync(user);
+            authModel.Roles = roles.ToList();
+            authModel.RefreshToken = newRefreshToken.Token;
+            authModel.RefreshTokenExpiration = newRefreshToken.ExpiresOn;
+
+            return authModel;
+        }
+
+        public async Task<bool> RevokeTokenAsync(string token)
+        {
+            var user = await _userManager.Users.SingleOrDefaultAsync(u => u.refershTokens.Any(t => t.Token == token));
+
+            if (user == null)
+                return false;
+
+            var refreshToken = user.refershTokens.Single(t => t.Token == token);
+
+            if (!refreshToken.IsActive)
+                return false;
+
+            refreshToken.RevokedOn = DateTime.UtcNow;
+
+            await _userManager.UpdateAsync(user);
+
+            return true;
+        }
+
+
+        private RefreshToken GenerateRefreshToken()
+        {
+            var randomNumber = new byte[32];
+
+            using var generator = new RNGCryptoServiceProvider();
+
+            generator.GetBytes(randomNumber);
+
+            return new RefreshToken
+            {
+                Token = Convert.ToBase64String(randomNumber),
+                ExpiresOn = DateTime.UtcNow.AddDays(10),
+                CreatedOn = DateTime.UtcNow
+            };
         }
     }
 }

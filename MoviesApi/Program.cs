@@ -43,7 +43,8 @@ namespace MoviesApi
                        ValidIssuer = builder.Configuration["JWT:issuerIP"],
                        ValidateAudience = true,
                        ValidAudience = builder.Configuration["JWT:audienceIP"],
-                       IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JWT:SecurityKey"]))
+                       IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JWT:SecurityKey"])),
+                        ClockSkew = TimeSpan.Zero
                    };
 
                }

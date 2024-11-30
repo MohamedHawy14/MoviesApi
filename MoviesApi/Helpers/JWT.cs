@@ -5,6 +5,6 @@
         public  string SecurityKey { get; set; }
         public  string issuerIP { get; set; }
         public  string audienceIP { get; set; }
-        public  double DuarationInDays { get; set; }
+        public  double DuarationInMintues { get; set; }
     }
 }
